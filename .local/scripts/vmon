@@ -1,4 +1,26 @@
-sudo modprobe evdi initial_device_count=2
-xrandr --addmode DVI-I-1-1 2560x1600_59.9 
-xrandr --output DVI-I-1-1 --mode 2560x1600 --below DP-0
-x11vnc -clip 2560x1600+0+1080
+#!/bin/bash
+
+# Define the resolution for the virtual monitors
+VIRTUAL_RESOLUTION="1920x1080"
+
+# Define the display names for the virtual monitors
+DISPLAY_NAME1="VIRTUAL1"
+DISPLAY_NAME2="VIRTUAL2"
+
+# Create virtual monitors using xrandr
+xrandr --setprovideroutputsource 1 0 0
+xrandr --auto
+
+# Set up virtual monitors with specified resolution
+xrandr --fb ${VIRTUAL_RESOLUTION} --output ${DISPLAY_NAME1} --mode ${VIRTUAL_RESOLUTION} --left-of eDP1
+xrandr --fb ${VIRTUAL_RESOLUTION} --output ${DISPLAY_NAME2} --mode ${VIRTUAL_RESOLUTION} --right-of ${DISPLAY_NAME1}
+
+# Get the IP address of the desktop PC
+# Modify this line to get the IP address of your desktop PC
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
+
+
+# Start VNC server on the laptop
+x11vnc -display :0 -clip 1920x1080+1366+0 -forever -bg -o /tmp/x11vnc1.log &
+x11vnc -display :0 -clip 1920x1080+3286+0 -forever -bg -o /tmp/x11vnc2.log &
+

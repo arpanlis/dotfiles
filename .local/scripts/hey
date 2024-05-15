@@ -1,26 +1,28 @@
 #!/usr/bin/bash
 
 if [[ $1 == "install" ]]; then
-    command sudo pacman -S ${@:2}
+    command sudo apt install ${@:2}
 fi
 if [[ $1 == "remove" ]]; then
     appname="${@:2}"
 
     if [ -z "$2" ]; then
-      appname=$(pacman -Q | fzf | awk '{print $1;}')
+      appname=$(sudo apt list --installed | fzf | awk -F'/' '{print $1}')
     fi
 
-    command sudo -S pacman -Rns "$appname"
+    command sudo apt remove $appname
+    command sudo apt autoremove
 fi
 if [[ $1 == "uninstall" ]]; then
-    command sudo pacman -Rns ${@:2}
+    command sudo apt remove ${@:2}
+    command sudo apt autoremove
 fi
 if [[ $1 == "update" ]]; then
-    command sudo pacman -Syu
+    command sudo apt update
 fi
 if [[ $1 == "aurupdate" ]]; then
     command yay -Quq --aur | xargs -n 1 yay -S --noconfirm
 fi
 if [[ $1 == "list" ]]; then
-    command pacman -Q
+    command apt list --installed
 fi

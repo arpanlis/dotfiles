@@ -1,6 +1,6 @@
 # Start X at login
 if status --is-login
-    if test (tty) = /dev/tty1
+    if test (tty) = /dev/tty3
         exec startx -- -keeptty
     end
 end
@@ -13,13 +13,15 @@ function fish_user_key_bindings
 end
 
 # Paths
-set -gx fish_user_paths ~/.local/scripts ~/.local/bin ~/go/bin ~/.cargo/bin /opt/flutter/bin ~/.pub-cache/bin $fish_user_paths /opt/homebrew/bin 
+set -Ux PYENV_ROOT $HOME/.pyenv
+set -gx fish_user_paths $PYENV_ROOT/bin ~/.local/scripts ~/.local/share/bin ~/.local/bin ~/go/bin ~/.cargo/bin /opt/flutter/bin ~/.pub-cache/bin $fish_user_paths /opt/homebrew/bin 
 set -gx SUDO_EDITOR nvim
 set -gx GOPATH ~/go
 
 
 # Alias
 alias gcc="/usr/bin/gcc"
+alias pn="pnpm"
 alias g++="/usr/bin/g++"
 alias py="python3"
 alias vim="nvim"
@@ -48,7 +50,6 @@ alias gputop="nvtop"
 
 # Disable ENV prompt since it is already shown on the right side
 set VIRTUAL_ENV_DISABLE_PROMPT 1
-set -gx DBUS_SESSION_BUS_ADDRESS 'unix:path=/run/user/1000/bus'
 set -gx LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/local/cuda/lib64
 set -gx LANG en_US.UTF-8
 set -Ux PYENV_ROOT $HOME/.pyenv
@@ -63,6 +64,9 @@ end
 if test -z "$QT_QPA_PLATFORMTHEME"
    set -Ux QT_QPA_PLATFORMTHEME qt5ct
 end
+
+# Set DBUS_SESSION_BUS_ADDRESS
+set -gx DBUS_SESSION_BUS_ADDRESS unix:path=/run/user/1002/bus
 
 atuin init fish | source
 pyenv init - | source

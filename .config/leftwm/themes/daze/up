@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 export SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
+# xrandr --output eDP-1 --primary --mode 1366x768 --scale 1.405 --pos 1920x0 --rotate normal --output HDMI-0 --mode 1920x1080 --pos 0x0 --rotate normal 
 
 #down the last running theme
 if [ -f "/tmp/leftwm-theme-down" ]; then
@@ -40,7 +41,6 @@ xmodmap -e "keycode 133 = keycode 64"
 # Hide cursor while typing
 unclutter &> /dev/null &
 
-sleep 3
 index=0
 monitor="$(polybar -m | grep +0+0 | sed s/:.*// | tac)"
 leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' | while read -r width x y
@@ -49,8 +49,3 @@ do
   monitor=$monitor offsetx=$x width=$width polybar -c $SCRIPTPATH/polybar.config $barname &> /dev/null &
   let index=index+1
 done
-
-nvidia-settings -a [gpu:0]/GPUPowerMizerMode=1 > /dev/null
-nvidia-settings -a [gpu:0]/GPUPowerMizerMode=1 > /dev/null
-
-cd /home/daze/Desktop/actions-runner && ./run.sh &> /dev/null &

@@ -44,10 +44,10 @@ remap("n", "<leader>[", "<CMD> lua vim.diagnostic.goto_prev()<CR>", opts)
 remap("n", "<leader>]", "<CMD> lua vim.diagnostic.goto_next()<CR>", opts)
 remap("n", "<leader>q", "<CMD> lua vim.diagnostic.setloclist()<CR>", opts)
 remap("n", "gD", "<CMD> lua vim.lsp.buf.declaration()<CR>", opts)
-remap("n", "gd", "<CMD> lua vim.lsp.buf.definition()<CR>", opts)
+remap("n", "gd", "<CMD> lua vim.lsp.buf.implementation()<CR>", opts)
 remap("n", "<leader>ca", "<CMD> lua vim.lsp.buf.code_action()<CR>", opts)
 remap("n", "<leader>k", "<CMD> lua vim.lsp.buf.hover()<CR>", opts)
-remap("n", "gi", "<CMD> lua vim.lsp.buf.implementation()<CR>", opts)
+remap("n", "gi", "<CMD> lua vim.lsp.buf.defination()<CR>", opts)
 remap("n", "<C-k>", "<CMD> lua vim.lsp.buf.signature_help()<CR>", opts)
 
 -- Select all
@@ -76,6 +76,8 @@ remap("n", "<S-PageDown>", "<Nop>", opts)
 
 remap("n", "<leader>k", "<C-u>zz", { desc = "Half page up" })
 remap("n", "<leader>j", "<C-d>zz", { desc = "Half page down" })
+remap("v", "<leader>k", "<C-u>zz", { desc = "Half page up" })
+remap("v", "<leader>j", "<C-d>zz", { desc = "Half page down" })
 
 -- Hard mode
 -- remap("n", "h", "<Nop>", opts)
