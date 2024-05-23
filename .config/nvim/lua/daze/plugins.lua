@@ -21,12 +21,12 @@ return {
 	},
 
 	-- Dashboard
-	{
-		"glepnir/dashboard-nvim",
-		config = function()
-			require("daze.config.dashboard")
-		end,
-	},
+	-- {
+	-- 	"glepnir/dashboard-nvim",
+	-- 	config = function()
+	-- 		require("daze.config.dashboard")
+	-- 	end,
+	-- },
 
 	-- Telescope
 	{
@@ -223,7 +223,12 @@ return {
 
 	{ "ron-rs/ron.vim" },
 
-	{ "stevearc/dressing.nvim" },
+	{
+		"stevearc/dressing.nvim",
+		config = function()
+			require("daze.config.dressing")
+		end,
+	},
 
 	-- Dart & Flutter Plugin
 	-- use {
