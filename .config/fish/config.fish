@@ -17,15 +17,19 @@ set -Ux PYENV_ROOT $HOME/.pyenv
 set -gx fish_user_paths $PYENV_ROOT/bin ~/.local/scripts ~/.local/share/bin ~/.local/bin ~/go/bin ~/.cargo/bin /opt/flutter/bin ~/.pub-cache/bin $fish_user_paths /opt/homebrew/bin 
 set -gx SUDO_EDITOR nvim
 set -gx GOPATH ~/go
+set -gx EDITOR nvim
 
 
 # Alias
 alias gcc="/usr/bin/gcc"
+alias yarn="pnpm"
+alias s="pnpm dev"
 alias pn="pnpm"
 alias g++="/usr/bin/g++"
 alias py="python3"
 alias vim="nvim"
 alias vi="nvim"
+alias check="./"
 alias c="clear"
 alias top="htop"
 alias po="poetry"
@@ -67,6 +71,17 @@ end
 
 # Set DBUS_SESSION_BUS_ADDRESS
 set -gx DBUS_SESSION_BUS_ADDRESS unix:path=/run/user/1002/bus
+
+
+function ensure
+    for file in .husky/*
+        if test -f $file
+            chmod +x $file
+            $file
+            chmod -x $file
+        end
+    end
+end
 
 atuin init fish | source
 pyenv init - | source
