@@ -38,6 +38,9 @@ xmodmap -e "keycode 9 = grave asciitilde"
 xmodmap -e "keycode 64 = keycode 133"
 xmodmap -e "keycode 133 = keycode 64"
 
+# Disable screen off timeout
+xset s off -dpms
+
 # Hide cursor while typing
 unclutter &> /dev/null &
 

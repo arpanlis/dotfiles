@@ -20,14 +20,6 @@ return {
 		end,
 	},
 
-	-- Dashboard
-	-- {
-	-- 	"glepnir/dashboard-nvim",
-	-- 	config = function()
-	-- 		require("daze.config.dashboard")
-	-- 	end,
-	-- },
-
 	-- Telescope
 	{
 		"nvim-telescope/telescope.nvim",
@@ -113,12 +105,6 @@ return {
 		end,
 	},
 
-	-- {
-	-- 	"pmizio/typescript-tools.nvim",
-	-- 	dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
-	-- 	opts = {},
-	-- },
-
 	-- Github Copilot
 	"zbirenbaum/copilot.lua",
 
@@ -146,11 +132,12 @@ return {
 		end,
 	},
 
-	-- Hardtime
 	{
-		"m4xshen/hardtime.nvim",
+		"f-person/git-blame.nvim",
 		config = function()
-			require("hardtime").setup()
+			require("gitblame").setup({
+				enabled = false,
+			})
 		end,
 	},
 
@@ -170,13 +157,6 @@ return {
 			require("daze.config.nvim-treesitter")
 		end,
 	},
-
-	-- {
-	--     "nvim-treesitter/nvim-treesitter-context",
-	--     config = function()
-	--         require("treesitter-context").setup()
-	--     end,
-	-- },
 
 	-- Visual surround
 	{
@@ -229,12 +209,6 @@ return {
 			require("daze.config.dressing")
 		end,
 	},
-
-	-- Dart & Flutter Plugin
-	-- use {
-	--     'akinsho/flutter-tools.nvim',
-	--     config = function() require("daze.config.flutter-tools") end
-	-- }
 
 	{
 		"karb94/neoscroll.nvim",

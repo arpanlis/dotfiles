@@ -1,9 +1,14 @@
-#!/usr/bin/env bash
+#!/usr/bin/fish
 
-tmux -u has-session -t $1 > /dev/null 2>&1 
-if [ $? ]
-then
-  command tmux -u new-session -d -s $1 > /dev/null 2>&1
-fi
+set session_name $argv[1]
 
-tmux -u attach -t $1
+# Check if the tmux session exists
+tmux -u has-session -t $session_name > /dev/null 2>&1
+
+if test $status -ne 0
+    # Create a new tmux session if it does not exist
+    command tmux -u new-session -d -s $session_name fish> /dev/null 2>&1
+end
+
+# Attach to the tmux session
+tmux -u attach -t $session_name
