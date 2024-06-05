@@ -35,10 +35,12 @@
         (name: "Alacritty", value: "alacritty", args: ["-e", "/home/daze/.local/scripts/tmc", "main"], x: 171, y: 96, height: 576, width: 1024),
         (name: "Teams", value: "teams-for-linux", x: 171, y: 96, height: 576, width: 1024),
         (name: "FileExplorer", value: "nautilus", x: 171, y: 96, height: 576, width: 1024),
+        (name: "GPaste", value: "/usr/libexec/gpaste/gpaste-ui", x: 171, y: 96, height: 576, width: 1024),
 
         // (name: "Alacritty", value: "alacritty", args: ["-e", "/home/daze/.local/scripts/tmc", "main"], x: 260, y: 140, height: 800, width: 1400),
         // (name: "Teams", value: "teams-for-linux", x: 260, y: 140, height: 800, width: 1400),
         // (name: "FileExplorer", value: "nautilus", x: 260, y: 140, height: 800, width: 1400),
+        // (name: "GPaste", value: "/usr/libexec/gpaste/gpaste-ui", x: 260, y: 140, height: 800, width: 1400),
     ],
     window_rules: [
         (window_class: None, window_title: "OpenGL-Practice", spawn_on_tag: 3, spawn_on_workspace: None, spawn_on_workspace_id: None, spawn_floating: true, spawn_sticky: None, spawn_fullscreen: None, spawn_as_type: None),
@@ -109,6 +111,7 @@
         (command: Execute, value: "~/.local/scripts/ss_ocr", modifier: [], key: "Home"),
         (command: ToggleScratchPad, value: "Alacritty", modifier: ["modkey"], key: "Return"),
         (command: ToggleScratchPad, value: "Teams", modifier: ["modkey"], key: "t"),
+        (command: ToggleScratchPad, value: "GPaste", modifier: ["modkey"], key: "v"),
         // (command: ToggleScratchPad, value: "Routine", modifier: ["modkey"], key: "s"),
         // (command: ToggleScratchPad, value: "Colemak", modifier: ["modkey"], key: "m"),
         (command: ToggleScratchPad, value: "FileExplorer", modifier: ["modkey"], key: "e"),
