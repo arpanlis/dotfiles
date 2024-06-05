@@ -1,21 +1,210 @@
-#!/usr/bin/env bash
+#!/usr/bin/python3
 
-if [[ $# -eq 1 ]]; then
-    selected=$1
-else
-    selected=$(find ~/Documents/Projects -mindepth 1 -maxdepth 1 -type d | fzf)
-fi
 
-if [[ -z $selected ]]; then
-    exit 0
-fi
+import os
+from shutil import which
+import subprocess
+import sys
+import tempfile
 
-selected_name=$(basename "$selected" | tr . _)
+PROJECTS_PATH = "/home/daze/Documents/Projects"
+PROJECT_WHITELIST = [
+    "ai-frontend",
+    "inteliome-front-client",
+]
 
-tmux has-session -t $selected_name > /dev/null 2>&1 
-if [ $? ]
-then
-  command tmux new-session -d -s $selected_name -c $selected > /dev/null 2>&1
-fi
 
-tmux attach -t $selected_name
+def find_project_folders():
+    project_folders = []
+    for folder in os.listdir(PROJECTS_PATH):
+        if folder in PROJECT_WHITELIST:
+            project_folders.append(folder)
+
+    return project_folders
+
+
+def check_dependencies():
+    if not which("fzf"):
+        raise SystemError("Cannot find 'fzf' installed on PATH.")
+
+
+def fzf_prompt(choices=None, fzf_options="", delimiter="\n", label: str | None = None):
+    if choices is None:
+        choices = []
+
+    if label is not None:
+        fzf_options += f' --border-label="{label}" --border=top --border-label-pos=3'
+
+    # convert a list to a string [ 1, 2, 3 ] => "1\n2\n3"
+    choices_str = delimiter.join(map(str, choices))
+
+    selection = []
+
+    with tempfile.NamedTemporaryFile(delete=False) as input_file:
+        with tempfile.NamedTemporaryFile(delete=False) as output_file:
+            # Create a temp file with list entries as lines
+            input_file.write(choices_str.encode("utf-8"))
+            input_file.flush()
+
+    # Invoke fzf externally and write to output file
+    os.system(f'fzf {fzf_options} < "{input_file.name}" > "{output_file.name}"')
+
+    # get selected options
+    with open(output_file.name, encoding="utf-8") as f:
+        for line in f:
+            selection.append(line.strip("\n"))
+
+    os.unlink(input_file.name)
+    os.unlink(output_file.name)
+
+    return selection
+
+
+# Parse the url and get the issue number
+# https://yco.atlassian.net/browse/IP-800
+def get_issue_number(url_or_isn: str):
+    if url_or_isn == "":
+        raise Exception("No issue number, url or ID provided!")
+
+    if url_or_isn.startswith("IP"):
+        return url_or_isn
+    elif url_or_isn[0].isdigit():
+        return f"IP-{url_or_isn}"
+    else:
+        return url_or_isn.split("/")[-1]
+
+
+# Iterate through the list of folders in ~/Documents/Projects/ and check if worktree exists for the issue number.
+# Same issue number can be present in multiple folders. So, we need to check for all the folders.
+def find_existing_worktree(isn: str):
+    repositories = find_project_folders()
+
+    worktree_paths = []
+    for repository in repositories:
+        if os.path.exists(f"{PROJECTS_PATH}/{repository}/{isn}"):
+            worktree_paths.append(f"{repository}/{isn}")
+
+    if worktree_paths == []:
+        return None
+
+    return worktree_paths
+
+
+def create_worktree(isn: str):
+    choosen_repo_path = fzf_prompt(
+        find_project_folders(),
+        label="Select a path to create worktree:",
+    )
+
+    if choosen_repo_path == []:
+        raise Exception("No repository selected!")
+
+    choosen_repo_path = choosen_repo_path[0]
+
+    worktree_path = f"{PROJECTS_PATH}/{choosen_repo_path}"
+
+    if os.path.exists(f"{worktree_path}/{isn}"):
+        raise Exception("Worktree already exists for the issue number!")
+
+    print("Pulling latest changes from origin/dev!")
+    os.system(f"cd {worktree_path}/dev && git pull")
+
+    print("Pruining worktrees!")
+    os.system(f"cd {worktree_path} && git worktree prune")
+
+    print(f"Creating worktree for {isn}!")
+    os.system(f"cd {worktree_path} && git worktree add {isn}")
+
+    print(
+        f"Resetting the worktree to origin/dev and installing dependencies for {isn}!"
+    )
+    os.system(
+        f"cd {worktree_path}/{isn} && git reset --hard origin/dev && cp ../.env.local . && pnpm install"
+    )
+
+    print(f"Launching tmux session for {isn}!")
+    project_chooser(f"{choosen_repo_path}/{isn}")
+
+    return choosen_repo_path
+
+
+def project_chooser(path: str | None = None):
+    exist_on_multiple_projects = False
+    if path:
+        selected = path
+    else:
+        tickets = {}
+        for directory in find_project_folders():
+            os.system(f"cd {PROJECTS_PATH}/{directory} && git worktree prune")
+
+            available_worktrees = os.listdir(
+                f"{PROJECTS_PATH}/{directory}/.git/worktrees"
+            )
+            for worktree in available_worktrees:
+                if worktree in tickets.keys():
+                    tickets[worktree].append(directory)
+                else:
+                    tickets[worktree] = [directory]
+
+        selected = fzf_prompt(choices=tickets.keys(), label="Select Project")
+
+        if selected:
+            selected = selected[0]
+        else:
+            raise Exception("No ticket selected!")
+
+        if len(tickets[selected]) > 1:
+            exist_on_multiple_projects = True
+            project = fzf_prompt(
+                choices=tickets[selected],
+                label="Ticket found in multiple projects. Select one:",
+            )
+
+            if selected:
+                selected = f"{project[0]}/{selected}"
+            else:
+                raise Exception("No project selected!")
+        else:
+            selected = f"{tickets[selected][0]}/{selected}"
+
+    if not selected:
+        sys.exit(0)
+
+    selected_absolute = f"{PROJECTS_PATH}/{selected}"
+
+    if exist_on_multiple_projects:
+        session_name = selected.replace(".", "_")
+    else:
+        session_name = os.path.basename(selected_absolute).replace(".", "_")
+
+    try:
+        subprocess.check_call(["tmux", "has-session", "-t", session_name])
+    except subprocess.CalledProcessError:
+        print(f"Creating new tmux session for {session_name}!")
+        subprocess.call(
+            ["tmux", "new-session", "-d", "-s", session_name, "-c", selected_absolute]
+        )
+
+    subprocess.call(["tmux", "attach", "-t", session_name])
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        project_chooser()
+    else:
+        url = sys.argv[1]
+        isn = get_issue_number(url)
+
+        existing_worktree = find_existing_worktree(isn)
+
+        if existing_worktree is None:
+            create_worktree(isn)
+        elif len(existing_worktree) == 1:
+            project_chooser(existing_worktree[0])
+        else:
+            choosen_repo = fzf_prompt(
+                existing_worktree,
+                label="Issue number exists in multiple repositories. Select one:",
+            )
+            project_chooser(choosen_repo[0])
+
