@@ -2,8 +2,10 @@
 
 
 import os
+import re
 from shutil import which
 import subprocess
+from urllib.parse import urlencode
 import sys
 import tempfile
 
@@ -12,6 +14,34 @@ PROJECT_WHITELIST = [
     "ai-frontend",
     "inteliome-front-client",
 ]
+
+
+def pr_template(
+    notify_to: str | None = None,
+    ticket_link: str | None = None,
+    change_log: str | None = None,
+):
+    return f"""
+<!--- Thank you for helping us out: your efforts mean a great deal to the project!. Please provide a general summary of your changes in the title above -->
+
+## Overview
+Please add a link to the Jira ticket associated with this PR.
+- Ticket Link : {ticket_link}
+
+## Checklist:
+- [ ] Have you added an explanation of what your changes do and why you'd like us to include them?
+- [ ] Have you written unit tests for your core changes, as applicable?
+- [x] Have you successfully ran tests with your changes locally?
+- [x] Are branch naming conventions followed ? i.e., <activity_type>/<Ticket-Number>_<Short-Description>. Please check https://poc-acl.atlassian.net/l/cp/fZZuf0ah for more details.
+
+## Notify to
+<!-- List of people who should be notified about the changes -->
+- {notify_to}
+
+## Change Log
+<!-- Specify the changes list. -->
+- {change_log}
+"""
 
 
 def find_project_folders():
@@ -60,22 +90,25 @@ def fzf_prompt(choices=None, fzf_options="", delimiter="\n", label: str | None =
     return selection
 
 
-# Parse the url and get the issue number
-# https://yco.atlassian.net/browse/IP-800
-def get_issue_number(url_or_isn: str):
-    if url_or_isn == "":
+def get_issue_number(text: str):
+    if text == "":
         raise Exception("No issue number, url or ID provided!")
 
-    if url_or_isn.startswith("IP"):
-        return url_or_isn
-    elif url_or_isn[0].isdigit():
-        return f"IP-{url_or_isn}"
-    else:
-        return url_or_isn.split("/")[-1]
+    pattern = r"IP-\d+"
+
+    matches = re.findall(pattern, text)
+
+    if len(matches) > 1:
+        return None
+    elif len(matches) == 1:
+        return matches[0]
+
+    if text.isdigit():
+        return f"IP-{text}"
+
+    return None
 
 
-# Iterate through the list of folders in ~/Documents/Projects/ and check if worktree exists for the issue number.
-# Same issue number can be present in multiple folders. So, we need to check for all the folders.
 def find_existing_worktree(isn: str):
     repositories = find_project_folders()
 
@@ -123,12 +156,12 @@ def create_worktree(isn: str):
     )
 
     print(f"Launching tmux session for {isn}!")
-    project_chooser(f"{choosen_repo_path}/{isn}")
+    project_switcher(f"{choosen_repo_path}/{isn}")
 
     return choosen_repo_path
 
 
-def project_chooser(path: str | None = None):
+def project_chooser(path: str | None = None) -> tuple[str, str]:
     exist_on_multiple_projects = False
     if path:
         selected = path
@@ -177,6 +210,12 @@ def project_chooser(path: str | None = None):
     else:
         session_name = os.path.basename(selected_absolute).replace(".", "_")
 
+    return selected_absolute, session_name
+
+
+def project_switcher(path: str | None = None):
+    selected_absolute, session_name = project_chooser(path)
+
     try:
         subprocess.check_call(["tmux", "has-session", "-t", session_name])
     except subprocess.CalledProcessError:
@@ -190,21 +229,72 @@ def project_chooser(path: str | None = None):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        project_chooser()
+        project_switcher()
+    elif sys.argv[1] == "take":
+        try:
+            path = sys.argv[2]
+        except IndexError:
+            path, _ = project_chooser()
+
+        os.system(f"cd {path} && fish")
+    elif sys.argv[1] == "pr":
+        # If current directory path contains the issue number, then open the PR page in the browser.
+        isn = get_issue_number(os.getcwd())
+        path = os.getcwd()
+
+        if not isn:
+            path, _ = project_chooser()
+            isn = get_issue_number(path)
+
+        os.chdir(path)
+
+        # get the repository name from the git remote url
+        repo = subprocess.check_output(
+            ["git", "config", "--get", "remote.origin.url"], text=True
+        ).strip()
+
+        repo = repo.split(":")[1].replace(".git", "")
+
+        title = subprocess.check_output(
+            ["git", "log", "-1", "--pretty=%B"], text=True
+        ).strip()
+
+        try:
+            change_log = title.split(":")[1].split("(")[0].strip()
+        except IndexError:
+            change_log = ""
+
+        params = {
+            "quick_pull": 1,
+            "title": title,
+            "body": pr_template(
+                notify_to="@amitpatellis",
+                ticket_link=f"https://yco.atlassian.net/browse/{isn}",
+                change_log=change_log,
+            ),
+        }
+
+        pr_url = f"https://github.com/{repo}/compare/dev...{isn}?{urlencode(params)}"
+
+        print(f"{pr_url}")
+
+        os.system(f"xdg-open {pr_url}")
     else:
         url = sys.argv[1]
         isn = get_issue_number(url)
+
+        if isn is None:
+            raise Exception("No issue number found in the URL!")
 
         existing_worktree = find_existing_worktree(isn)
 
         if existing_worktree is None:
             create_worktree(isn)
         elif len(existing_worktree) == 1:
-            project_chooser(existing_worktree[0])
+            project_switcher(existing_worktree[0])
         else:
             choosen_repo = fzf_prompt(
                 existing_worktree,
                 label="Issue number exists in multiple repositories. Select one:",
             )
-            project_chooser(choosen_repo[0])
-
+            project_switcher(choosen_repo[0])
