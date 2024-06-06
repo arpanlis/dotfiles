@@ -32,7 +32,7 @@ yellow  = '#ffc777'
 blue    = '#82aaff'
 magenta = '#ff966c'
 cyan    = '#b4f9f8'
-white   = '#5f8787'
+white   = '#FFFFFF'
 
 [colors.selection]
 background = "0xbbc2cf"
