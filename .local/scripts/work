@@ -227,6 +227,26 @@ def project_switcher(path: str | None = None):
     subprocess.call(["tmux", "attach", "-t", session_name])
 
 
+def project_create_or_switch(path: str):
+    isn = get_issue_number(path)
+
+    if isn is None:
+        raise Exception("No issue number found in the URL!")
+
+    existing_worktree = find_existing_worktree(isn)
+
+    if existing_worktree is None:
+        create_worktree(isn)
+    elif len(existing_worktree) == 1:
+        project_switcher(existing_worktree[0])
+    else:
+        choosen_repo = fzf_prompt(
+            existing_worktree,
+            label="Issue number exists in multiple repositories. Select one:",
+        )
+        project_switcher(choosen_repo[0])
+
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         project_switcher()
@@ -237,6 +257,67 @@ if __name__ == "__main__":
             path, _ = project_chooser()
 
         os.system(f"cd {path} && fish")
+    elif sys.argv[1] == "jira":
+        jira_command = 'jira issue list -a$(jira me) -s~"closed" --plain'
+        jira_output = subprocess.check_output(jira_command, shell=True, text=True)
+
+        jira_output = jira_output.split("\n")[1::]
+
+        cleaned = []
+        for x in jira_output:
+            splitted = x.split("\t")
+            filtered = [y for y in splitted if y.strip() != ""]
+            cleaned.append(filtered)
+        jira_output = cleaned
+
+        jira_output = [
+            {"type": x[0], "isn": x[1], "summary": x[2], "status": x[3]}
+            for x in jira_output
+            if len(x) == 4
+        ]
+
+        selection_options = [f"{x['isn']} - {x['summary']}" for x in jira_output]
+        selected = fzf_prompt(
+            choices=selection_options,
+            label="Select an issue number to open:",
+        )
+
+        selected_isn = selected[0].split(" - ")[0]
+
+        jira_commands = {
+            "Work - Open to Work": "",
+            "Take - Switch to directory": "",
+            "Browser - Open in browser": f"xdg-open https://yco.atlassian.net/browse/{selected_isn}",
+            "Progress - Move to progress": f"jira issue move {selected_isn} 'Start Progress'",
+            "Review - Move to ready for review": f"jira issue move {selected_isn} 'Ready for Review' && jira issue assign {selected_isn} amit.patel@yco.com.np",
+        }
+
+        selected_command = fzf_prompt(
+            choices=jira_commands.keys(),
+            label=f"Select an action to perform for {selected_isn}:",
+        )
+
+        if selected_command == []:
+            raise Exception("No command selected!")
+        elif selected_command[0] == "Work - Open to Work":
+            project_create_or_switch(selected_isn)
+        elif selected_command[0] == "Take - Switch to directory":
+            existing_worktree = find_existing_worktree(selected_isn)
+
+            if existing_worktree is None:
+                raise Exception("No worktree found for the issue number!")
+            elif len(existing_worktree) == 1:
+                os.system(f"cd {PROJECTS_PATH}/{existing_worktree[0]} && fish")
+            else:
+                choosen_repo = fzf_prompt(
+                    existing_worktree,
+                    label="Issue number exists in multiple repositories. Select one:",
+                )
+                os.system(f"cd {PROJECTS_PATH}/{choosen_repo[0]} && fish")
+
+        else:
+            os.system(jira_commands[selected_command[0]])
+
     elif sys.argv[1] == "pr":
         # If current directory path contains the issue number, then open the PR page in the browser.
         isn = get_issue_number(os.getcwd())
@@ -278,23 +359,9 @@ if __name__ == "__main__":
 
         print(f"{pr_url}")
 
-        os.system(f"xdg-open {pr_url}")
+        os.system(f"xdg-open '{pr_url}'")
     else:
         url = sys.argv[1]
-        isn = get_issue_number(url)
-
-        if isn is None:
-            raise Exception("No issue number found in the URL!")
-
-        existing_worktree = find_existing_worktree(isn)
-
-        if existing_worktree is None:
-            create_worktree(isn)
-        elif len(existing_worktree) == 1:
-            project_switcher(existing_worktree[0])
-        else:
-            choosen_repo = fzf_prompt(
-                existing_worktree,
-                label="Issue number exists in multiple repositories. Select one:",
-            )
-            project_switcher(choosen_repo[0])
+        if not url:
+            raise Exception("No URL, issue ID or path provided!")
+        project_create_or_switch(url)
