@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Configuration name
+CONFIG_NAME="LISNepal"
+
+# Check if the OpenVPN3 connection is currently active
+if openvpn3 sessions-list | grep -q "$CONFIG_NAME"; then
+  echo "Disconnecting from $CONFIG_NAME"
+  openvpn3 session-manage --disconnect --config "$CONFIG_NAME"
+
+  # Check if the session was successfully disconnected
+  if openvpn3 sessions-list | grep -q "$CONFIG_NAME"; then
+    echo "Failed to disconnect from $CONFIG_NAME"
+    exit 1
+  else
+    echo "Successfully disconnected from $CONFIG_NAME"
+  fi
+else
+  echo "Connecting to $CONFIG_NAME"
+  openvpn3 session-start --config "$CONFIG_NAME"
+fi

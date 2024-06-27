@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+tempfile=$(mktemp --suffix=.gif) && eval $(slop -f "byzanz-record --duration=10 --x=%x --y=%y --width=%w --height=%h $tempfile") && xclip -selection clipboard -t image/gif -i < $tempfile && echo $tempfile

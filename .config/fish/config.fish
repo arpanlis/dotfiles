@@ -22,8 +22,10 @@ set -gx EDITOR nvim
 
 # Alias
 alias gcc="/usr/bin/gcc"
+alias work="lis"
 alias yarn="pnpm"
 alias nvm="fnm"
+alias k="kubectl"
 alias s="pnpm dev"
 alias pn="pnpm"
 alias g++="/usr/bin/g++"

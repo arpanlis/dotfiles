@@ -132,15 +132,6 @@ return {
 		end,
 	},
 
-	{
-		"f-person/git-blame.nvim",
-		config = function()
-			require("gitblame").setup({
-				enabled = false,
-			})
-		end,
-	},
-
 	-- Status Line Related
 	{
 		"nvim-lualine/lualine.nvim",
@@ -207,13 +198,6 @@ return {
 		"stevearc/dressing.nvim",
 		config = function()
 			require("daze.config.dressing")
-		end,
-	},
-
-	{
-		"karb94/neoscroll.nvim",
-		config = function()
-			require("daze.config.neoscroll")
 		end,
 	},
 }
